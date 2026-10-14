@@ -1,0 +1,69 @@
+name: uyari
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: uyari
+      POSTGRES_USER: uyari
+      POSTGRES_PASSWORD: uyari_dev
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uyari -d uyari"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:56379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    working_dir: /app
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://uyari:uyari_dev@postgres:5432/uyari
+      REDIS_URL: redis://redis:6379
+      PORT: "5900"
+    ports:
+      - "127.0.0.1:5900:5900"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    working_dir: /app
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:5900
+    ports:
+      - "127.0.0.1:5904:5904"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
