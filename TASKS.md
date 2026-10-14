@@ -6,7 +6,7 @@
 - [~] Registrar `uyari` como producto/unidad de negocio en ConPakta (migraciones escritas: activacion-0029_uyari.sql y tenant-registry-0019_unidad_uyari.sql; falta aplicarlas en prod y el PR en conenlace-platform)
 - [ ] Reservar puertos 5900–5909 en el mapa global
 - [ ] Subdominio `uyari.conpakta.com` + TLS
-- [~] Login con ConPakta Identity (JWT/JWKS), guard por tenant (módulo `apps/api/src/auth.ts` escrito; falta registrar el middleware en Fastify, el cliente Keycloak y las pruebas)
+- [~] Login con ConPakta Identity (JWT/JWKS): guard en Fastify (`apps/api/src/app.ts`) y pruebas hechas; falta el cliente Keycloak `uyari` con audiencia `uyari` y roles `uyari-*`
 - [ ] Migraciones: project, phase, profile, meeting, segment (RLS por tenant)
 - [ ] PWA: botón grabar/pausar/finalizar, indicador de nivel de audio
 - [ ] Pantalla de consentimiento al iniciar; guardar aceptación por participante
