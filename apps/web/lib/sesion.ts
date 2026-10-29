@@ -2,6 +2,7 @@ const ISSUER = process.env.NEXT_PUBLIC_IDENTITY_ISSUER ?? 'https://auth.conpakta
 const CLIENTE = 'uyari';
 const CLAVE_VERIFICADOR = 'uyari.pkce';
 const CLAVE_TOKEN = 'uyari.token';
+const CLAVE_ID_TOKEN = 'uyari.id_token';
 
 export const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5900';
 
@@ -39,14 +40,20 @@ export async function canjearCodigo(codigo: string): Promise<void> {
     }),
   });
   if (!r.ok) throw new Error('canje_fallido');
-  const { access_token } = (await r.json()) as { access_token: string };
+  const { access_token, id_token } = (await r.json()) as { access_token: string; id_token?: string };
   sessionStorage.setItem(CLAVE_TOKEN, access_token);
+  if (id_token) sessionStorage.setItem(CLAVE_ID_TOKEN, id_token);
 }
 
 export const tokenGuardado = (): string | null =>
   typeof window === 'undefined' ? null : sessionStorage.getItem(CLAVE_TOKEN);
 
+/** Cierra la sesión local y la de Keycloak (id_token_hint evita la pantalla de confirmación). Vuelve a la raíz del sitio. */
 export function cerrarSesion(): void {
+  const idToken = sessionStorage.getItem(CLAVE_ID_TOKEN);
   sessionStorage.removeItem(CLAVE_TOKEN);
-  location.assign('/');
+  sessionStorage.removeItem(CLAVE_ID_TOKEN);
+  const params = new URLSearchParams({ client_id: CLIENTE, post_logout_redirect_uri: `${location.origin}/` });
+  if (idToken) params.set('id_token_hint', idToken);
+  location.assign(`${ISSUER}/protocol/openid-connect/logout?${params}`);
 }
