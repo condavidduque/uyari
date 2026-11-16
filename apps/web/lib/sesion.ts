@@ -9,7 +9,7 @@ export const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5900';
 const base64url = (bytes: Uint8Array) =>
   btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-export async function iniciarLogin(): Promise<void> {
+export async function iniciarLogin(extra: Record<string, string> = {}): Promise<void> {
   const verificador = base64url(crypto.getRandomValues(new Uint8Array(32)));
   const desafio = base64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verificador))));
   sessionStorage.setItem(CLAVE_VERIFICADOR, verificador);
@@ -20,6 +20,7 @@ export async function iniciarLogin(): Promise<void> {
     redirect_uri: `${location.origin}/callback`,
     code_challenge: desafio,
     code_challenge_method: 'S256',
+    ...extra,
   });
   location.assign(`${ISSUER}/protocol/openid-connect/auth?${params}`);
 }
@@ -47,6 +48,17 @@ export async function canjearCodigo(codigo: string): Promise<void> {
 
 export const tokenGuardado = (): string | null =>
   typeof window === 'undefined' ? null : sessionStorage.getItem(CLAVE_TOKEN);
+
+/**
+ * Intercambiador de empresas (menú de cuenta): el menú ya confirmó que Keycloak tiene la empresa nueva. Uyari guarda el token una sola vez (sin refresh
+ * token): se pide uno nuevo con un inicio de sesión silencioso (prompt=none; la sesión de Keycloak sigue abierta). Si Keycloak no puede hacerlo en
+ * silencio vuelve a /callback con ?error= y allí se pasa al inicio de sesión normal. La página navega: la promesa no se resuelve.
+ */
+export async function renovarEmpresa(): Promise<never> {
+  sessionStorage.removeItem(CLAVE_TOKEN);
+  await iniciarLogin({ prompt: 'none' });
+  return new Promise<never>(() => undefined);
+}
 
 /** Cierra la sesión local y la de Keycloak (id_token_hint evita la pantalla de confirmación). Vuelve a la raíz del sitio. */
 export function cerrarSesion(): void {

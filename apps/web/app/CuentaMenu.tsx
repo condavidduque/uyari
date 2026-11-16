@@ -3,7 +3,7 @@
 // Menú de cuenta compartido (Mi perfil, Mi empresa, Fondo, Cerrar sesión). Lo sirve Caddy en /cuenta/menu.js (mismo origen).
 // Si no carga, la aplicación sigue funcionando y queda un botón «Cerrar sesión».
 import { useEffect, useRef, useState } from 'react';
-import { cerrarSesion, tokenGuardado } from '../lib/sesion';
+import { cerrarSesion, renovarEmpresa, tokenGuardado } from '../lib/sesion';
 
 const URL_MENU = '/cuenta/menu.js';
 const URL_CSS = '/cuenta/menu.css';
@@ -11,7 +11,7 @@ const URL_CSS = '/cuenta/menu.css';
 interface ModuloMenu {
   montarMenuCuenta: (
     raiz: HTMLElement,
-    o: { producto: string; nombreProducto: string; token: () => Promise<string>; rol?: string; cerrarSesion: () => void },
+    o: { producto: string; nombreProducto: string; token: () => Promise<string>; rol?: string; cerrarSesion: () => void; renovar?: (tenantId: number) => Promise<unknown> },
   ) => Promise<unknown>;
 }
 
@@ -39,6 +39,7 @@ export function CuentaMenu() {
           nombreProducto: 'Uyari',
           token: async () => tokenGuardado() ?? '',
           cerrarSesion,
+          renovar: () => renovarEmpresa(),
         }),
       )
       .catch(() => setFallo(true));
